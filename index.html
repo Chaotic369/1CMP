@@ -11111,6 +11111,8 @@ window.oneClickPush = async function(customMsg) {
                         list.style.display = 'flex';
                         content.style.display = 'none';
                         caret.className = 'fa-solid fa-caret-up';
+                                                var _rf = document.getElementById('modalRepoFilter');
+                                                if (_rf) _rf.value = '';
                         window.renderModalRepoList();
                     } else {
                         list.style.display = 'none';
@@ -11201,9 +11203,30 @@ window.oneClickPush = async function(customMsg) {
 
                                 window.renderModalRepoList = function() {
                                           const list = document.getElementById('modalRepoList');
-                                          list.innerHTML = '';
-                                          window.updateModalRepoBulkDeleteBtn();
-                                          ghRepos.forEach((r, index) => {
+                                          var fi = document.getElementById('modalRepoFilter');
+                                                                                    if (!fi) {
+                                                                                        fi = document.createElement('input');
+                                                                                        fi.id = 'modalRepoFilter';
+                                                                                        fi.type = 'text';
+                                                                                        fi.autocomplete = 'off';
+                                                                                        fi.spellcheck = false;
+                                                                                        fi.style.cssText = 'position:sticky; top:0; z-index:2; flex-shrink:0; font-size:12px; padding:8px 12px; border-radius:10px; margin-bottom:4px;';
+                                                                                        fi.addEventListener('input', function() { window.renderModalRepoList(); });
+                                                                                        list.appendChild(fi);
+                                                                                    }
+                                                                                    list.querySelectorAll('.repo-item, .repo-empty').forEach(function(n) { n.remove(); });
+                                                                                    window.updateModalRepoBulkDeleteBtn();
+                                                                                    fi.placeholder = 'Filter ' + ghRepos.length + ' repos…';
+                                                                                    var rq = fi.value.trim().toLowerCase();
+                                                                                    var shownRepos = ghRepos.map(function(r, index) { return { r: r, index: index }; }).filter(function(x) { return !rq || x.r.toLowerCase().indexOf(rq) !== -1; });
+                                                                                    if (!shownRepos.length) {
+                                                                                        var emptyEl = document.createElement('div');
+                                                                                        emptyEl.className = 'repo-empty';
+                                                                                        emptyEl.style.cssText = 'color:rgba(255,255,255,0.5); font-size:11px; padding:12px; text-align:center;';
+                                                                                        emptyEl.textContent = rq ? 'No repos match "' + rq + '"' : 'No repositories';
+                                                                                        list.appendChild(emptyEl);
+                                                                                    }
+                                                                                    shownRepos.forEach(({ r, index }) => {
                                                                                                                                   const btn = document.createElement('div');
                                                                                                                                   btn.className = 'repo-item' + (r === ghRepo ? ' active' : '');
                                                                                                                                   btn.style.padding = '12px 14px';
@@ -11219,7 +11242,8 @@ window.oneClickPush = async function(customMsg) {
                                               nameSpan.style.overflow = 'hidden';
                                               nameSpan.style.textOverflow = 'ellipsis';
                                               nameSpan.style.whiteSpace = 'nowrap';
-                                              nameSpan.textContent = (index + 1) + '. ' + (r.split('/')[1] || r);
+                                              nameSpan.textContent = (r === ghRepo ? '● ' : '') + (index + 1) + '. ' + (r.split('/')[1] || r);
+                                                                                            btn.title = r;
               
                                               const actions = document.createElement('div');
                                               actions.style.display = 'flex';
