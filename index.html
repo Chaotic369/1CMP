@@ -12177,15 +12177,7 @@ window.oneClickPush = async function(customMsg) {
     return out;
   }
 
-  // ---------- templates ----------
-  var BUILTIN = {
-    'Android (Kotlin)': ['.github/workflows/android.yml', '.gitignore', 'build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'app/build.gradle.kts', 'app/proguard-rules.pro', 'app/src/main/AndroidManifest.xml', 'app/src/main/java/com/example/app/MainActivity.kt', 'app/src/main/res/layout/activity_main.xml', 'app/src/main/res/values/strings.xml', 'app/src/main/res/values/themes.xml', 'README.md'],
-    'Node / Express': ['package.json', '.gitignore', '.env.example', 'src/index.js', 'src/routes/index.js', 'src/middleware/', 'src/utils/', 'test/index.test.js', 'README.md'],
-    'Web (HTML/CSS/JS)': ['index.html', 'css/style.css', 'js/app.js', 'assets/images/', 'assets/fonts/', 'README.md'],
-    'React + Vite': ['package.json', 'vite.config.js', 'index.html', '.gitignore', 'src/main.jsx', 'src/App.jsx', 'src/App.css', 'src/index.css', 'src/components/', 'public/', 'README.md'],
-    'Python package': ['pyproject.toml', 'requirements.txt', '.gitignore', 'README.md', 'src/app/__init__.py', 'src/app/main.py', 'tests/test_main.py']
-  };
-  var TPL_KEY = 'aic_bulk_tpl_v1', LAST_KEY = 'aic_bulk_last_v1';
+  // ---------- local storage helpers ----------
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
 
@@ -12199,21 +12191,14 @@ window.oneClickPush = async function(customMsg) {
     bar.id = 'bulkTplBar';
     bar.style.cssText = 'display:flex; gap:6px; align-items:center; margin-bottom:6px; flex-wrap:wrap;';
     bar.innerHTML =
-      '<select id="bulkTplSelect" style="' + S + ' max-width:150px;"></select>' +
-      '<button type="button" id="bulkTplLoad" style="' + S + '">Load</button>' +
-      '<button type="button" id="bulkTplSave" style="' + S + '">Save as…</button>' +
-      '<button type="button" id="bulkTplDel" style="' + S + ' color:var(--red);" title="Delete selected custom template"><i class="fa-solid fa-trash"></i></button>' +
-      '<button type="button" id="bulkTidy" style="' + S + ' color:var(--teal);" title="Convert trees / commas to a clean one-path-per-line list">Clean up</button>';
+          '<button type="button" id="bulkTidy" style="' + S + ' color:var(--teal);" title="Convert trees / commas to a clean one-path-per-line list">Clean up</button>';
     ta.parentNode.insertBefore(bar, ta);
     var pv = document.createElement('div');
     pv.id = 'bulkPreview';
     pv.style.cssText = 'margin-top:6px; font-size:10px; line-height:1.5; color:rgba(255,255,255,0.75); word-break:break-word;';
     ta.parentNode.insertBefore(pv, ta.nextSibling);
     ta.setAttribute('placeholder', 'One path per line, or paste a tree (├── src/), or a comma-separated list.\nFolders end with /');
-    refreshTplSelect();
-    document.getElementById('bulkTplLoad').onclick = loadTpl;
-    document.getElementById('bulkTplSave').onclick = saveTpl;
-    document.getElementById('bulkTplDel').onclick = delTpl;
+    
     document.getElementById('bulkTidy').onclick = function() {
       var plan = buildPlan(ta.value);
       if (!plan.flat.length) { toast('Nothing to clean up', 'warn'); return; }
@@ -12221,45 +12206,7 @@ window.oneClickPush = async function(customMsg) {
       refreshPreview();
     };
   }
-  function refreshTplSelect() {
-    var sel = document.getElementById('bulkTplSelect'); if (!sel) return;
-    var custom = lsGet(TPL_KEY, {}), h = '<option value="">Templates…</option><optgroup label="Built-in">';
-    Object.keys(BUILTIN).forEach(function(k) { h += '<option value="b:' + k + '">' + k + '</option>'; });
-    h += '</optgroup>';
-    var ck = Object.keys(custom);
-    if (ck.length) { h += '<optgroup label="Mine">'; ck.forEach(function(k) { h += '<option value="c:' + k.replace(/"/g, '&quot;') + '">' + k.replace(/</g, '&lt;') + '</option>'; }); h += '</optgroup>'; }
-    if (lsGet(LAST_KEY, null)) h += '<optgroup label="Recent"><option value="l:">Last created list</option></optgroup>';
-    sel.innerHTML = h;
-  }
-  function tplText(v) {
-    if (!v) return null;
-    var kind = v.slice(0, 1), key = v.slice(2);
-    if (kind === 'b') return BUILTIN[key] ? BUILTIN[key].join('\n') : null;
-    if (kind === 'c') return lsGet(TPL_KEY, {})[key] || null;
-    if (kind === 'l') return lsGet(LAST_KEY, null);
-    return null;
-  }
-  async function loadTpl() {
-    var ta = document.getElementById('bulkPathsInput'), t = tplText(document.getElementById('bulkTplSelect').value);
-    if (!t) { toast('Pick a template first', 'warn'); return; }
-    if (ta.value.trim() && !(await window.inAppConfirm('Replace the current list with this template?', 'Load Template'))) return;
-    ta.value = t; refreshPreview();
-  }
-  async function saveTpl() {
-    var ta = document.getElementById('bulkPathsInput');
-    var text = ta.value.trim() ? buildPlan(ta.value).flat.join('\n') : (lsGet(LAST_KEY, '') || '');
-    if (!text) { toast('Nothing to save – type a list or create one first', 'warn'); return; }
-    var name = await window.inAppPrompt('Template name:', '', 'Save Template');
-    if (!name || !name.trim()) return;
-    var all = lsGet(TPL_KEY, {}); all[name.trim().slice(0, 40)] = text;
-    if (lsSet(TPL_KEY, all)) { refreshTplSelect(); toast('✅ Template saved', 'ok'); } else toast('❌ Could not save template', 'err');
-  }
-  async function delTpl() {
-    var v = document.getElementById('bulkTplSelect').value;
-    if (v.slice(0, 2) !== 'c:') { toast('Select one of your own templates to delete', 'warn'); return; }
-    if (!(await window.inAppConfirm('Delete template "' + v.slice(2) + '"?', 'Delete Template'))) return;
-    var all = lsGet(TPL_KEY, {}); delete all[v.slice(2)]; lsSet(TPL_KEY, all); refreshTplSelect();
-  }
+  
   function refreshPreview() {
     var ta = document.getElementById('bulkPathsInput'), pv = document.getElementById('bulkPreview');
     if (!ta || !pv) return;
@@ -12324,7 +12271,6 @@ window.oneClickPush = async function(customMsg) {
         return out;
       }, 'Bulk create ' + all.length + ' item(s) via AI Compile');
       window.treeApply(created, []);
-      lsSet(LAST_KEY, plan.flat.join('\n'));
       var last = created.filter(function(p) { return !/\/\.gitkeep$/.test(p); }).pop();
       if (last) {
         ghFilePath = last; document.getElementById('ghFilePath').value = ghFilePath; ghSaveConfig();
