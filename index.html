@@ -12185,26 +12185,15 @@ window.oneClickPush = async function(customMsg) {
   var lastVal = null;
   function injectBulkUi() {
     var ta = document.getElementById('bulkPathsInput');
-    if (!ta || document.getElementById('bulkTplBar')) return;
-    var S = 'height:22px; font-size:9px; border-radius:6px; padding:2px 8px; cursor:pointer; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#fff;';
-    var bar = document.createElement('div');
-    bar.id = 'bulkTplBar';
-    bar.style.cssText = 'display:flex; gap:6px; align-items:center; margin-bottom:6px; flex-wrap:wrap;';
-    bar.innerHTML =
-          '<button type="button" id="bulkTidy" style="' + S + ' color:var(--teal);" title="Convert trees / commas to a clean one-path-per-line list">Clean up</button>';
-    ta.parentNode.insertBefore(bar, ta);
+    if (!ta || document.getElementById('bulkPreview')) return;
+    
     var pv = document.createElement('div');
     pv.id = 'bulkPreview';
     pv.style.cssText = 'margin-top:6px; font-size:10px; line-height:1.5; color:rgba(255,255,255,0.75); word-break:break-word;';
     ta.parentNode.insertBefore(pv, ta.nextSibling);
     ta.setAttribute('placeholder', 'One path per line, or paste a tree (├── src/), or a comma-separated list.\nFolders end with /');
     
-    document.getElementById('bulkTidy').onclick = function() {
-      var plan = buildPlan(ta.value);
-      if (!plan.flat.length) { toast('Nothing to clean up', 'warn'); return; }
-      ta.value = plan.flat.join('\n');
-      refreshPreview();
-    };
+    
   }
   
   function refreshPreview() {
