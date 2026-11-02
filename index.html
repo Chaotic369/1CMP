@@ -494,11 +494,13 @@ button.btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; c
 }
 .repo-item.file-item { padding: 2px 4px; }
 .repo-item i { font-size: 9px; flex-shrink: 0; }
+.repo-item { transition: background 0.12s ease; }
+.repo-item:hover { background: rgba(255,255,255,0.07); }
 .repo-item.ready-to-drag { background: rgba(255,255,255,0.1); cursor: grab; }
 .repo-item.ready-to-drag:active { cursor: grabbing; }
 .repo-item.drag-over { background: rgba(255,255,255,0.05); opacity: 0.8; }
 .repo-name { font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; pointer-events: none; color: #ffffff; opacity: 1; }
-.repo-item.active { background: rgba(255,255,255,0.15); color: #ffffff; font-weight: 600; }
+.repo-item.active { background: rgba(255,255,255,0.15); color: #ffffff; font-weight: 600; box-shadow: inset 2px 0 0 var(--green); }
 
 .repo-actions { display: none; align-items: center; gap: 3px; }
 .repo-item.active .repo-actions { display: flex; }
@@ -2275,6 +2277,7 @@ window.renderBookmarks = function() {
         const rBtn = document.createElement('div');
         rBtn.className = 'repo-item' + (r === ghRepo ? ' active' : '');
         rBtn.dataset.bindex = bIndex;
+                rBtn.title = r;
         
         const nameSpan = document.createElement('span');
         nameSpan.className = 'repo-name';
@@ -2770,7 +2773,34 @@ function renderRepoTabs() {
       container.appendChild(bulkToolbar);
   }
   
-  ghRepos.forEach((r, index) => {
+  const repoFilter = (window._repoFilter || '').toLowerCase();
+    if (ghRepos.length > 6 || repoFilter) {
+      const fInput = document.createElement('input');
+      fInput.type = 'text';
+      fInput.id = 'repoFilterInput';
+      fInput.placeholder = 'Filter…';
+      fInput.title = 'Filter ' + ghRepos.length + ' repositories';
+      fInput.value = window._repoFilter || '';
+      fInput.autocomplete = 'off';
+      fInput.spellcheck = false;
+      fInput.style.cssText = 'width:100%; box-sizing:border-box; position:sticky; top:0; z-index:2; margin-bottom:2px; padding:2px 5px; height:16px; font-size:8px; background:#0d1117; color:#fff; border:1px solid rgba(255,255,255,0.12); border-radius:6px; outline:none; flex-shrink:0;';
+      fInput.addEventListener('keydown', (ev) => { ev.stopPropagation(); });
+      fInput.addEventListener('input', () => {
+        window._repoFilter = fInput.value;
+        const caretPos = fInput.selectionStart;
+        renderRepoTabs();
+        const refocus = document.getElementById('repoFilterInput');
+        if (refocus) {
+          refocus.focus();
+          try { refocus.setSelectionRange(caretPos, caretPos); } catch (err) {}
+        }
+      });
+      container.appendChild(fInput);
+    }
+    let shownCount = 0;
+    ghRepos.forEach((r, index) => {
+      if (repoFilter && r.toLowerCase().indexOf(repoFilter) === -1) return;
+      shownCount++;
     const btn = document.createElement('div');
     btn.className = 'repo-item' + (r === ghRepo ? ' active' : '');
     btn.title = r; // Full name remains in title for clarity
@@ -3009,10 +3039,34 @@ function renderRepoTabs() {
                                     `;
                                 }
 
-                btn.appendChild(nameSpan);
+                if (!window.repoBulkMode && typeof ghBookmarkedRepos !== 'undefined' && ghBookmarkedRepos.includes(r)) {
+                                    const starDot = document.createElement('i');
+                                    starDot.className = 'fa-solid fa-star';
+                                    starDot.style.cssText = 'font-size:6px; color:var(--amber); flex-shrink:0; pointer-events:none;';
+                                    btn.appendChild(starDot);
+                                }
+                                btn.appendChild(nameSpan);
                                             btn.appendChild(actions);
             container.appendChild(btn);
-          });
+                      });
+                      if (repoFilter && shownCount === 0) {
+                        const noMatch = document.createElement('div');
+                        noMatch.style.cssText = 'font-size:8px; color:rgba(255,255,255,0.5); padding:4px; text-align:center;';
+                        noMatch.textContent = 'No matching repos';
+                        container.appendChild(noMatch);
+                      }
+                      const activeRepoEl = container.querySelector('.repo-item.active');
+                      if (activeRepoEl) {
+                        const scroller = container.scrollHeight > container.clientHeight + 1 ? container : document.getElementById('sidebarContent');
+                        if (scroller) {
+                          const sr = scroller.getBoundingClientRect();
+                          const ar = activeRepoEl.getBoundingClientRect();
+                          if (ar.height > 0) {
+                            if (ar.top < sr.top) scroller.scrollTop -= (sr.top - ar.top);
+                            else if (ar.bottom > sr.bottom) scroller.scrollTop += (ar.bottom - sr.bottom);
+                          }
+                        }
+                      }
           if(window.renderBookmarks) window.renderBookmarks();
         }
 
