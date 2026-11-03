@@ -1818,7 +1818,7 @@ function getFrameDepth() {
   return depth;
 }
 var currentNestingDepth = getFrameDepth();
-var MAX_NESTING_DEPTH = 6;
+var MAX_NESTING_DEPTH = 3;
 var SETTINGS_KEY   = 'compiler_settings_v2';
 var MAX_UNDO       = 50;
 var SPLIT_TOKEN    = '===SPLIT===';
@@ -1885,7 +1885,7 @@ function bringModalToFront(modal) {
       if (!$appMenu || !$appMenu.classList.contains('open')) $backdrop.classList.remove('open');
     }
   }
-var MAX_NESTING_DEPTH = 4;
+var MAX_NESTING_DEPTH = 3;
 
 function centerModal(el) {
   if (!el) return;
@@ -8627,11 +8627,31 @@ function render(src, skipEditorUpdate) {
     updateCodeGutter();
   
     renderTimer = setTimeout(function() {
-      if (currentNestingDepth >= MAX_NESTING_DEPTH) {
-        document.getElementById('sb-status').textContent = 'preview capped';
-        return;
-      }
-      try {
+          if (currentNestingDepth >= MAX_NESTING_DEPTH) {
+            document.getElementById('sb-status').textContent = 'preview capped';
+            $pv.style.display = 'none';
+            $pv.srcdoc = '';
+            var emptyEl = document.getElementById('emptyState');
+            if (emptyEl) {
+              emptyEl.style.display = 'flex';
+              emptyEl.style.flexDirection = 'column';
+              emptyEl.style.alignItems = 'center';
+              emptyEl.style.justifyContent = 'center';
+              var warnEl = document.getElementById('nestedWarnText');
+              if (!warnEl) {
+                warnEl = document.createElement('div');
+                warnEl.id = 'nestedWarnText';
+                warnEl.style.cssText = 'position:absolute;bottom:24px;font-size:10px;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.6);padding:4px 8px;border-radius:6px;pointer-events:none;z-index:10;';
+                emptyEl.appendChild(warnEl);
+              }
+              warnEl.textContent = 'Nested preview limited to 3 levels';
+              warnEl.style.display = 'block';
+            }
+            return;
+          }
+          var existingWarn = document.getElementById('nestedWarnText');
+          if (existingWarn) existingWarn.style.display = 'none';
+          try {
         var bridge = [
                             '<style>html,body{height:100%;max-height:100%;box-sizing:border-box;margin:0;padding:0;-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto;}</style>',
                             '<scr' + 'ipt>',
