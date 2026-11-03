@@ -1430,7 +1430,11 @@ select.bm-select option { background: var(--elevated); color: #fff; }
                 <button class="btn" id="bpMultiLogBtnIcon" style="display:none; position:absolute; top:8px; right:40px; width:24px; height:24px; background:rgba(57,197,207,0.15); border:1px solid rgba(57,197,207,0.3); border-radius:6px; color:var(--teal); font-size:10px; z-index:10;" title="Multi-Project Step 1 with Error Logs"><i class="fa-solid fa-layer-group"></i></button>
                 <button class="btn" id="bpCopyLogBtnIcon" style="display:none; position:absolute; top:8px; right:12px; width:24px; height:24px; background:rgba(248,81,73,0.15); border:1px solid rgba(248,81,73,0.3); border-radius:6px; color:var(--red); font-size:10px; z-index:10;" title="Copy Error Logs"><i class="fa-regular fa-copy"></i></button>
               </div>
-                <div style="display:flex; gap:8px; margin-top:12px;">
+                <div id="bpLinks" style="display:none; gap:8px; margin-top:12px;">
+                                  <a id="bpGhLink" href="#" target="_blank" rel="noopener" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:7px 12px; background:rgba(92,157,255,0.15); border:1px solid rgba(92,157,255,0.3); border-radius:8px; color:var(--blue); font-weight:600; font-size:11px; text-decoration:none;"><i class="fa-brands fa-github"></i> GitHub Action</a>
+                                  <a id="bpDesktopLink" href="#" target="_blank" rel="noopener" style="display:none; flex:1; align-items:center; justify-content:center; gap:6px; padding:7px 12px; background:rgba(57,211,83,0.15); border:1px solid rgba(57,211,83,0.3); border-radius:8px; color:var(--green); font-weight:600; font-size:11px; text-decoration:none;"><i class="fa-solid fa-desktop"></i> <span id="bpDesktopLinkLbl">Desktop link pending...</span></a>
+                                </div>
+                                <div style="display:flex; gap:8px; margin-top:12px;">
               <button id="bpCancelBtn" style="flex:1; padding:7px 12px; background:rgba(248,81,73,0.15); border:1px solid rgba(248,81,73,0.3); border-radius:8px; color:var(--red); cursor:pointer; font-weight:600; font-size:11px; transition:all 0.2s;">Cancel Build</button>
                       <button id="bpCloseBtn" style="display:none; flex:1; padding:7px 12px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; cursor:pointer; font-weight:600; font-size:11px; transition:all 0.2s;">Close</button>
                       <button id="bpMultiErrBtn" style="display:none; flex:1; padding:7px 12px; background:rgba(57,197,207,0.15); border:1px solid rgba(57,197,207,0.3); border-radius:8px; color:var(--teal); cursor:pointer; font-weight:600; font-size:11px; transition:all 0.2s;"><i class="fa-solid fa-layer-group"></i> Multi 1</button>
@@ -1804,6 +1808,7 @@ function bringModalToFront(modal) {
     if (!el) return;
     el.classList.remove('open');
     el.style.display = 'none';
+        if (id === 'buildProgressOverlay' && window.restoreActiveBuild) window.restoreActiveBuild();
     var sel = '#astPanel, #logPanel, #ghConfigPanel, #commitModal, #newRepoModal, #wallpaperModal, #buildModal, ' +
               '#workflowsModal, #fullTreeModal, #bulkModal, #errLogModal, #branchModal, #moreModal, #artifactsModal, #liveEditModal';
     var anyOpen = Array.from(document.querySelectorAll(sel)).some(function(m) {
@@ -10304,6 +10309,8 @@ window.oneClickPush = async function(customMsg) {
                                                                                     if(document.getElementById('bpMultiLogBtnIcon')) document.getElementById('bpMultiLogBtnIcon').style.display = 'none';
                                                                                     if(document.getElementById('bpCopyLogBtnIcon')) document.getElementById('bpCopyLogBtnIcon').style.display = 'none';
                                           updateStepperUI(10, '');
+                                                                                    if (window.persistActiveBuild) window.persistActiveBuild({ log: 'Initializing GitHub Actions...\n', minimized: false, status: 'Starting build...', pct: 10, state: '', done: false });
+                                                                                    if (window.updateBuildLinks) window.updateBuildLinks();
                       ov.style.display = 'flex';
                       centerModal(ov);
                       bringModalToFront(ov);
@@ -10312,6 +10319,7 @@ window.oneClickPush = async function(customMsg) {
       function updateBuildOverlay(status, pct, stateStr) {
                     document.getElementById('bpStatusText').textContent = status;
                     if (pct) updateStepperUI(pct, stateStr);
+                                        if (window.persistActiveBuild) { var _pp = { status: status, state: stateStr || '' }; if (pct) _pp.pct = pct; window.persistActiveBuild(_pp); }
                     if (stateStr === 'err') {
                                             document.getElementById('bpStatusText').style.color = 'var(--red)';
                                             if(document.getElementById('bpCancelBtn')) document.getElementById('bpCancelBtn').style.display = 'none';
@@ -10338,6 +10346,7 @@ window.oneClickPush = async function(customMsg) {
         const el = document.getElementById('bpLogs');
         el.textContent += log + '\n';
         el.scrollTop = el.scrollHeight;
+                if (window.persistActiveBuild) window.persistActiveBuild({ log: el.textContent.slice(-8000) });
       }
 
       const closeOverlay = () => {
@@ -10356,10 +10365,10 @@ window.oneClickPush = async function(customMsg) {
                 document.getElementById('buildProgressOverlay').style.display = 'none';
                 document.getElementById('menu-backdrop').classList.remove('open');
     
-          if (currentBuildRunId && ghRepo && ghToken) {
+          if (currentBuildRunId && (window._activeBuildRepo || ghRepo) && ghToken) {
                 toast('⏳ Cancelling build workflow...', 'info');
                 try {
-                  await fetch(`https://api.github.com/repos/${ghRepo}/actions/runs/${currentBuildRunId}/cancel`, {
+                  await fetch(`https://api.github.com/repos/${window._activeBuildRepo || ghRepo}/actions/runs/${currentBuildRunId}/cancel`, {
                     method: 'POST',
                     headers: { Authorization: `token ${ghToken}`, Accept: 'application/vnd.github.v3+json' }
                   });
@@ -10378,6 +10387,7 @@ window.oneClickPush = async function(customMsg) {
               document.getElementById('bpMinBtnIcon').addEventListener('click', (e) => {
                 e.stopPropagation();
                 document.getElementById('buildProgressOverlay').classList.add('minimized');
+                                if (window.persistActiveBuild) window.persistActiveBuild({ minimized: true });
               });
             }
 
@@ -10429,9 +10439,18 @@ window.oneClickPush = async function(customMsg) {
                           });
                         }
 
-      document.getElementById('buildProgressOverlay').addEventListener('click', function(e) {
+      document.addEventListener('click', function(e) {
+              var _ov = document.getElementById('buildProgressOverlay');
+              if (!_ov || _ov.style.display === 'none' || _ov.classList.contains('minimized')) return;
+              if (_ov.contains(e.target)) return;
+              _ov.classList.add('minimized');
+              if (window.persistActiveBuild) window.persistActiveBuild({ minimized: true });
+            }, true);
+
+            document.getElementById('buildProgressOverlay').addEventListener('click', function(e) {
         if (this.classList.contains('minimized')) {
           this.classList.remove('minimized');
+                    if (window.persistActiveBuild) window.persistActiveBuild({ minimized: false });
         }
       });
 
@@ -10455,6 +10474,10 @@ window.oneClickPush = async function(customMsg) {
                                   }
 
               const title = 'Building: ' + filename;
+                            const _isDesktop = /CLOUD_DESKTOP_READY|novnc/i.test(yamlContent) || /cloud-desktop/i.test(filename);
+                            clearTimeout(currentOverlayPollTimer);
+                            window._activeBuildRepo = ghRepo;
+                            try { localStorage.setItem('active_build_v1', JSON.stringify({ title: title, workflowFile: filename, artifactName: artifactName, startTime: Date.now(), repo: ghRepo, branch: ghBranch, phase: 'starting', isDesktop: _isDesktop })); } catch (e) {}
               showBuildOverlay(title);
 
               try {
@@ -10541,7 +10564,8 @@ window.oneClickPush = async function(customMsg) {
                 updateBuildOverlay('Build running. Polling GitHub...', 35);
                 clearTimeout(currentOverlayPollTimer);
 
-                localStorage.setItem('active_build_v1', JSON.stringify({ title, workflowFile: filename, artifactName, startTime: Date.now() }));
+                localStorage.setItem('active_build_v1', JSON.stringify({ title: title, workflowFile: filename, artifactName: artifactName, startTime: Date.now(), repo: ghRepo, branch: ghBranch, phase: 'running', isDesktop: _isDesktop, minimized: document.getElementById('buildProgressOverlay').classList.contains('minimized'), log: document.getElementById('bpLogs').textContent.slice(-8000), status: 'Build running. Polling GitHub...', pct: 35, state: '' }));
+                                if (window.updateBuildLinks) window.updateBuildLinks();
                 localStorage.setItem('last_build_workflow_v1', filename);
                 pollOverlayStatus(filename, artifactName);
 
@@ -10551,14 +10575,144 @@ window.oneClickPush = async function(customMsg) {
               }
             });
 
-      async function pollOverlayStatus(workflowFile, artifactName) {
+      window.persistActiveBuild = function(patch) {
+              try {
+                var cur = JSON.parse(localStorage.getItem('active_build_v1'));
+                if (!cur) return;
+                Object.keys(patch || {}).forEach(function(k) { cur[k] = patch[k]; });
+                localStorage.setItem('active_build_v1', JSON.stringify(cur));
+              } catch (e) {}
+            };
+
+            window.updateBuildLinks = function() {
+              try {
+                var ab = JSON.parse(localStorage.getItem('active_build_v1'));
+                var row = document.getElementById('bpLinks');
+                var gh = document.getElementById('bpGhLink');
+                var dk = document.getElementById('bpDesktopLink');
+                var lbl = document.getElementById('bpDesktopLinkLbl');
+                if (!row || !gh || !dk) return;
+                if (!ab || !ab.repo) { row.style.display = 'none'; return; }
+                gh.href = ab.runUrl || ('https://github.com/' + ab.repo + '/actions' + (ab.workflowFile ? '/workflows/' + encodeURIComponent(ab.workflowFile) : ''));
+                row.style.display = 'flex';
+                if (ab.isDesktop && !ab.done) {
+                  dk.style.display = 'flex';
+                  if (ab.desktopUrl) {
+                    dk.href = ab.desktopUrl;
+                    dk.style.pointerEvents = 'auto';
+                    dk.style.opacity = '1';
+                    if (lbl) lbl.textContent = 'Open Cloud Desktop';
+                  } else {
+                    dk.href = '#';
+                    dk.style.pointerEvents = 'none';
+                    dk.style.opacity = '0.5';
+                    if (lbl) lbl.textContent = 'Desktop link pending...';
+                  }
+                } else {
+                  dk.style.display = 'none';
+                }
+              } catch (e) {}
+            };
+
+            window.detectDesktopUrl = async function(run) {
+              if (window._dkBusy) return;
+              var ab = null;
+              try { ab = JSON.parse(localStorage.getItem('active_build_v1')); } catch (e) {}
+              if (!ab || !ab.isDesktop || ab.desktopUrl || !run || !run.jobs_url) return;
+              window._dkBusy = true;
+              try {
+                var hdr = { Authorization: 'token ' + ghToken, Accept: 'application/vnd.github.v3+json' };
+                var jr = await fetch(run.jobs_url, { headers: hdr, cache: 'no-store' });
+                if (!jr.ok) return;
+                var jd = await jr.json();
+                var job = jd && jd.jobs && jd.jobs[0];
+                if (!job) return;
+                var re = /https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com\/vnc\.html\?[^\s"'<>]+/;
+                var found = '';
+                try {
+                  var ar = await fetch('https://api.github.com/repos/' + (ab.repo || ghRepo) + '/check-runs/' + job.id + '/annotations', { headers: hdr, cache: 'no-store' });
+                  if (ar.ok) {
+                    var anns = await ar.json();
+                    (Array.isArray(anns) ? anns : []).forEach(function(a) {
+                      var m = re.exec(String(a.message || '') + ' ' + String(a.title || ''));
+                      if (m && !found) found = m[0];
+                    });
+                  }
+                } catch (e) {}
+                if (!found) {
+                  try {
+                    var lr = await fetch(job.url + '/logs', { headers: { Authorization: 'token ' + ghToken }, cache: 'no-store' });
+                    if (lr.ok) { var m2 = re.exec(await lr.text()); if (m2) found = m2[0]; }
+                  } catch (e) {}
+                }
+                if (found) {
+                  found = found.replace(/&amp;/g, '&');
+                  window.persistActiveBuild({ desktopUrl: found });
+                  window.updateBuildLinks();
+                  appendBuildLog('🖥 Cloud desktop link is ready.');
+                }
+              } catch (e) {
+              } finally {
+                window._dkBusy = false;
+              }
+            };
+
+            window.restoreActiveBuild = function() {
+              var ab = null;
+              try { ab = JSON.parse(localStorage.getItem('active_build_v1')); } catch (e) {}
+              var ov = document.getElementById('buildProgressOverlay');
+              if (!ov) return;
+              try {
+                if (window.MutationObserver && !window._bpKeepAlive) {
+                  window._bpKeepAlive = new MutationObserver(function() {
+                    try {
+                      if (ov.style.display === 'none' && localStorage.getItem('active_build_v1')) {
+                        ov.style.display = 'flex';
+                        ov.classList.add('minimized');
+                        window.persistActiveBuild({ minimized: true });
+                      }
+                    } catch (e) {}
+                  });
+                  window._bpKeepAlive.observe(ov, { attributes: true, attributeFilter: ['style'] });
+                }
+              } catch (e) {}
+              if (!ab || !ab.workflowFile) return;
+              window._activeBuildRepo = ab.repo || '';
+              var logEl = document.getElementById('bpLogs');
+              document.getElementById('bpTitle').innerHTML = '<i class="fa-solid fa-hammer" style="color:var(--blue); margin-right:8px;"></i>' + (ab.title || 'Build');
+              if (logEl) { logEl.textContent = ab.log || ''; logEl.scrollTop = logEl.scrollHeight; }
+              ov.classList.remove('minimized');
+              ov.style.display = 'flex';
+              try { centerModal(ov); bringModalToFront(ov); } catch (e) {}
+              if (ab.minimized !== false) ov.classList.add('minimized');
+              window.updateBuildLinks();
+              if (ab.state === 'ok' || ab.state === 'err') {
+                updateBuildOverlay(ab.status || 'Build finished', ab.pct || 100, ab.state);
+                return;
+              }
+              if (ab.phase === 'starting') {
+                updateBuildOverlay('Interrupted by restart before the build was dispatched. Close and start again.', 100, 'err');
+                appendBuildLog('Build was interrupted by a restart before dispatch.');
+                return;
+              }
+              currentBuildRunId = ab.runId || null;
+              updateBuildOverlay(ab.status || 'Resuming build...', ab.pct || 35);
+              appendBuildLog('[' + new Date().toLocaleTimeString() + '] Resumed after restart. Re-attaching to the build...');
+              pollOverlayStatus(ab.workflowFile, ab.artifactName);
+            };
+
+            async function pollOverlayStatus(workflowFile, artifactName) {
+              var _abSaved = null;
+              try { _abSaved = JSON.parse(localStorage.getItem('active_build_v1')); } catch (e) {}
+              const bRepo = (_abSaved && _abSaved.repo) || window._activeBuildRepo || ghRepo;
         try {
-          const runsRes = await fetch(`https://api.github.com/repos/${ghRepo}/actions/workflows/${workflowFile}/runs?per_page=1`, {
+          const runsRes = await fetch((_abSaved && _abSaved.runId) ? `https://api.github.com/repos/${bRepo}/actions/runs/${_abSaved.runId}` : `https://api.github.com/repos/${bRepo}/actions/workflows/${workflowFile}/runs?per_page=1`, {
                 headers: { Authorization: `token ${ghToken}`, Accept: 'application/vnd.github.v3+json' },
                 cache: 'no-store'
               });
           if (!runsRes.ok) throw new Error('Failed to fetch runs');
-          const runsData = await runsRes.json();
+          let runsData = await runsRes.json();
+                    if (_abSaved && _abSaved.runId && runsData && !runsData.workflow_runs) runsData = { workflow_runs: [runsData] };
           if (!runsData.workflow_runs || runsData.workflow_runs.length === 0) {
             currentOverlayPollTimer = setTimeout(() => pollOverlayStatus(workflowFile, artifactName), 5000);
             return;
@@ -10577,12 +10731,21 @@ window.oneClickPush = async function(customMsg) {
     
               if (run.status !== 'completed') {
                 updateBuildOverlay(`Building: ${run.status}...`, 60);
+                                if (window.persistActiveBuild) window.persistActiveBuild({ runId: run.id, runUrl: run.html_url, phase: 'running' });
+                                if (window.updateBuildLinks) window.updateBuildLinks();
+                                if (window.detectDesktopUrl) window.detectDesktopUrl(run);
                 appendBuildLog(`[${new Date().toLocaleTimeString()}] Status: ${run.status}`);
                 currentOverlayPollTimer = setTimeout(() => pollOverlayStatus(workflowFile, artifactName), 10000);
               } else {
-                localStorage.removeItem('active_build_v1');
-                if (run.conclusion === 'success') {
-              updateBuildOverlay(`Build Success! Fetching Artifact...`, 90);
+                if (window.persistActiveBuild) window.persistActiveBuild({ done: true, conclusion: run.conclusion, runId: run.id, runUrl: run.html_url });
+                                if (window.updateBuildLinks) window.updateBuildLinks();
+                                if (run.conclusion === 'success') {
+              if (_abSaved && _abSaved.isDesktop) {
+                              updateBuildOverlay('Cloud desktop session ended.', 100, 'ok');
+                              appendBuildLog('[' + new Date().toLocaleTimeString() + '] Cloud desktop session finished.');
+                              return;
+                            }
+                            updateBuildOverlay(`Build Success! Fetching Artifact...`, 90);
               appendBuildLog(`[${new Date().toLocaleTimeString()}] Conclusion: SUCCESS`);
         
               let artRes = await fetch(run.artifacts_url, { headers: { Authorization: `token ${ghToken}` }});
@@ -10608,7 +10771,7 @@ window.oneClickPush = async function(customMsg) {
                                 appendBuildLog(`✅ Artifact downloaded successfully.`);
                             } catch(dlErr) {
                                 appendBuildLog(`❌ Secure download failed: ${dlErr.message}. Falling back to browser URL...`);
-                                window.location.href = `https://github.com/${ghRepo}/actions/runs/${run.id}/artifacts/${artifact.id}`;
+                                window.location.href = `https://github.com/${bRepo}/actions/runs/${run.id}/artifacts/${artifact.id}`;
                                 updateBuildOverlay('Build Complete! Browser download initiated.', 100, 'ok');
                             }
                           } else {
@@ -10635,10 +10798,10 @@ window.oneClickPush = async function(customMsg) {
                               const tail = errorLines.length > 0 ? errorLines.join('\n') : fullLog.split('\n').slice(-250).join('\n');
                               appendBuildLog(`\n=== ERROR TRACE (${failedJob.name}) ===\n${tail}`);
                             } else {
-                              appendBuildLog(`\nNo job data ever appeared for this run — this usually means the workflow YAML failed to parse before any job could start.\nView directly: https://github.com/${ghRepo}/actions/runs/${run.id}`);
+                              appendBuildLog(`\nNo job data ever appeared for this run — this usually means the workflow YAML failed to parse before any job could start.\nView directly: https://github.com/${bRepo}/actions/runs/${run.id}`);
                             }
                           } catch(logErr) {
-                            appendBuildLog(`Failed to pull direct logs (${logErr.message}). View on GitHub: https://github.com/${ghRepo}/actions/runs/${run.id}`);
+                            appendBuildLog(`Failed to pull direct logs (${logErr.message}). View on GitHub: https://github.com/${bRepo}/actions/runs/${run.id}`);
                           }
                         }
           }
