@@ -298,16 +298,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--surf
   }
   #progressBar.active { display: block !important; opacity: 1 !important; }
 
-  #ideBootLoader {
-    position: fixed; inset: 0; z-index: 2147483000; background: #0a0a0c;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
-    color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  }
-  #ideBootLoader .bl-logo { font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
-  #ideBootLoader .bl-logo span { color: var(--blue); }
-  #ideBootLoader .bl-track { width: min(260px, 70vw); height: 6px; border-radius: 6px; background: rgba(255,255,255,0.08); overflow: hidden; }
-  #ideBootLoader .bl-fill { width: 0%; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--blue), var(--teal)); }
-  #ideBootLoader .bl-row { width: min(260px, 70vw); display: flex; justify-content: space-between; font-size: 10px; color: rgba(255,255,255,0.65); }
+  
+  
 
 #emptyState {
   position: fixed; inset: 0; background: var(--surface); z-index: 0; display: flex; align-items: center; justify-content: center;
@@ -939,48 +931,8 @@ select.bm-select option { background: var(--elevated); color: #fff; }
 
     <div id="progressBar"></div>
 
-    <div id="ideBootLoader">
-      <div class="bl-logo"><i class="fa-solid fa-hammer" style="color:var(--blue);"></i> AI Compile <span>PRO</span></div>
-      <div class="bl-track"><div class="bl-fill" id="ideBootFill"></div></div>
-      <div class="bl-row"><span id="ideBootMsg">Starting IDE...</span><span id="ideBootPct">0%</span></div>
-    </div>
-    <script>
-    (function () {
-      var cur = 0, done = false;
-      var el = document.getElementById('ideBootLoader');
-      var fill = document.getElementById('ideBootFill');
-      var msgEl = document.getElementById('ideBootMsg');
-      var pctEl = document.getElementById('ideBootPct');
-      function paint() {
-        if (fill) fill.style.width = cur + '%';
-        if (pctEl) pctEl.textContent = Math.round(cur) + '%';
-      }
-      window.bootProgress = function (p, msg) {
-        if (done) return;
-        if (p > cur) cur = Math.min(p, 99);
-        if (msg && msgEl) msgEl.textContent = msg;
-        paint();
-      };
-      window.bootDone = function () {
-        if (done) return;
-        done = true;
-        cur = 100;
-        if (msgEl) msgEl.textContent = 'Ready';
-        paint();
-        setTimeout(function () {
-          if (el) el.style.display = 'none';
-          try { if (el && el.parentNode) el.parentNode.removeChild(el); } catch (e) {}
-        }, 250);
-      };
-      var timer = setInterval(function () {
-        if (done) { clearInterval(timer); return; }
-        if (cur < 90) { cur += Math.max((90 - cur) * 0.06, 0.3); paint(); }
-      }, 100);
-      document.addEventListener('DOMContentLoaded', function () { window.bootProgress(55, 'Loading interface...'); });
-      window.addEventListener('load', function () { window.bootProgress(80, 'Starting editor...'); });
-      setTimeout(function () { window.bootDone(); }, 10000);
-    })();
-    </script>
+    
+    
 
 <iframe id="preview" sandbox="allow-scripts allow-same-origin allow-modals allow-forms allow-popups allow-downloads"></iframe>
 <div id="codeGutter"></div>
