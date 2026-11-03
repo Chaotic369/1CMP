@@ -285,8 +285,29 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--surf
   transition-delay: 0s !important;
   transition-duration: 0s !important;
   scroll-behavior: auto !important;
-}
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+  }
+  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+
+  #progressBar {
+    position: fixed !important; top: 0 !important; left: 0 !important; bottom: auto !important; right: auto !important;
+    height: 3px !important; width: 0%;
+    background: linear-gradient(90deg, var(--blue), var(--teal)) !important;
+    box-shadow: 0 0 8px rgba(92,157,255,0.7) !important;
+    border-radius: 0 3px 3px 0 !important;
+    z-index: 99998 !important; display: none !important; pointer-events: none !important;
+  }
+  #progressBar.active { display: block !important; opacity: 1 !important; }
+
+  #ideBootLoader {
+    position: fixed; inset: 0; z-index: 2147483000; background: #0a0a0c;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  #ideBootLoader .bl-logo { font-size: 18px; font-weight: 700; letter-spacing: 0.04em; }
+  #ideBootLoader .bl-logo span { color: var(--blue); }
+  #ideBootLoader .bl-track { width: min(260px, 70vw); height: 6px; border-radius: 6px; background: rgba(255,255,255,0.08); overflow: hidden; }
+  #ideBootLoader .bl-fill { width: 0%; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--blue), var(--teal)); }
+  #ideBootLoader .bl-row { width: min(260px, 70vw); display: flex; justify-content: space-between; font-size: 10px; color: rgba(255,255,255,0.65); }
 
 #emptyState {
   position: fixed; inset: 0; background: var(--surface); z-index: 0; display: flex; align-items: center; justify-content: center;
@@ -918,6 +939,49 @@ select.bm-select option { background: var(--elevated); color: #fff; }
 
     <div id="progressBar"></div>
 
+    <div id="ideBootLoader">
+      <div class="bl-logo"><i class="fa-solid fa-hammer" style="color:var(--blue);"></i> AI Compile <span>PRO</span></div>
+      <div class="bl-track"><div class="bl-fill" id="ideBootFill"></div></div>
+      <div class="bl-row"><span id="ideBootMsg">Starting IDE...</span><span id="ideBootPct">0%</span></div>
+    </div>
+    <script>
+    (function () {
+      var cur = 0, done = false;
+      var el = document.getElementById('ideBootLoader');
+      var fill = document.getElementById('ideBootFill');
+      var msgEl = document.getElementById('ideBootMsg');
+      var pctEl = document.getElementById('ideBootPct');
+      function paint() {
+        if (fill) fill.style.width = cur + '%';
+        if (pctEl) pctEl.textContent = Math.round(cur) + '%';
+      }
+      window.bootProgress = function (p, msg) {
+        if (done) return;
+        if (p > cur) cur = Math.min(p, 99);
+        if (msg && msgEl) msgEl.textContent = msg;
+        paint();
+      };
+      window.bootDone = function () {
+        if (done) return;
+        done = true;
+        cur = 100;
+        if (msgEl) msgEl.textContent = 'Ready';
+        paint();
+        setTimeout(function () {
+          if (el) el.style.display = 'none';
+          try { if (el && el.parentNode) el.parentNode.removeChild(el); } catch (e) {}
+        }, 250);
+      };
+      var timer = setInterval(function () {
+        if (done) { clearInterval(timer); return; }
+        if (cur < 90) { cur += Math.max((90 - cur) * 0.06, 0.3); paint(); }
+      }, 100);
+      document.addEventListener('DOMContentLoaded', function () { window.bootProgress(55, 'Loading interface...'); });
+      window.addEventListener('load', function () { window.bootProgress(80, 'Starting editor...'); });
+      setTimeout(function () { window.bootDone(); }, 10000);
+    })();
+    </script>
+
 <iframe id="preview" sandbox="allow-scripts allow-same-origin allow-modals allow-forms allow-popups allow-downloads"></iframe>
 <div id="codeGutter"></div>
 <textarea id="codeView" spellcheck="false" placeholder="Code will appear here..." readonly></textarea>
@@ -1423,7 +1487,13 @@ select.bm-select option { background: var(--elevated); color: #fff; }
       </div>
     </div>
 
-    <div id="bpStatusText" style="font-size:11px; margin-bottom:6px; color:var(--blue); font-weight:600; min-height:14px;">Initializing...</div>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px;">
+                    <div id="bpStatusText" style="font-size:11px; color:var(--blue); font-weight:600; min-height:14px; flex:1; min-width:0;">Initializing...</div>
+                    <div id="bpPctText" style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.85); flex-shrink:0;">0%</div>
+                  </div>
+                  <div id="bpBarTrack" style="width:100%; height:6px; border-radius:6px; background:rgba(255,255,255,0.08); overflow:hidden; margin-bottom:10px;">
+                    <div id="bpBarFill" style="width:0%; height:100%; border-radius:6px; background:linear-gradient(90deg, var(--blue), var(--teal));"></div>
+                  </div>
               <div style="position:relative;">
                 <div id="bpLogs" style="font-size:9px; color:rgba(255,255,255,0.75); background:#08080a; padding:10px; padding-right:64px; border-radius:8px; min-height:75px; max-height:130px; overflow-y:auto; white-space:pre-wrap; word-break:break-all; border:1px solid rgba(255,255,255,0.08); font-family:'JetBrains Mono', monospace;"></div>
                 <button class="btn" id="bpMultiLogBtnIcon" style="display:none; position:absolute; top:8px; right:40px; width:24px; height:24px; background:rgba(57,197,207,0.15); border:1px solid rgba(57,197,207,0.3); border-radius:6px; color:var(--teal); font-size:10px; z-index:10;" title="Multi-Project Step 1 with Error Logs"><i class="fa-solid fa-layer-group"></i></button>
@@ -4429,6 +4499,7 @@ function updateCodeGutter() {
   $codeGutter.scrollTop = $codeView.scrollTop;
 }
 
+if (window.bootProgress) window.bootProgress(70, 'Initializing interface...');
 var $toast       = document.getElementById('toast');
 var $astPanel    = document.getElementById('astPanel');
 var $astContent  = document.getElementById('astContent');
@@ -10179,6 +10250,13 @@ window.oneClickPush = async function(customMsg) {
       function updateStepperUI(pct, stateStr) {
         const stepperFill = document.getElementById('bpStepperProgress');
         if(stepperFill) stepperFill.style.height = pct + '%';
+                const _bpFill = document.getElementById('bpBarFill');
+                const _bpPct = document.getElementById('bpPctText');
+                if (_bpFill) {
+                  _bpFill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+                  _bpFill.style.background = stateStr === 'err' ? 'var(--red)' : (stateStr === 'ok' ? 'var(--green)' : 'linear-gradient(90deg, var(--blue), var(--teal))');
+                }
+                if (_bpPct) _bpPct.textContent = Math.round(pct) + '%';
   
         let currentStep = 1;
         if (pct >= 25) currentStep = 2;
@@ -10595,7 +10673,7 @@ window.oneClickPush = async function(customMsg) {
               } catch(e) {}
     
               if (run.status !== 'completed') {
-                              updateBuildOverlay(`Building: ${run.status}...`, 60);
+                              updateBuildOverlay(`Building: ${run.status}...`, Math.min(85, 40 + Math.floor((Date.now() - ((_abSaved && _abSaved.startTime) || Date.now())) / 4000)));
                                               if (window.persistActiveBuild) window.persistActiveBuild({ runId: run.id, runUrl: run.html_url, phase: 'running' });
                                               if (window.updateBuildLinks) window.updateBuildLinks();
                               appendBuildLog(`[${new Date().toLocaleTimeString()}] Status: ${run.status}`);
@@ -12704,6 +12782,7 @@ sourceContent = '';
 fileName = 'ready';
 render('', false); 
 addLog('info', 'AI Compile PRO Sovereign IDE ready.');
+if (window.bootDone) window.bootDone();
 </script>
 </body>
 </html>
