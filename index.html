@@ -1332,8 +1332,7 @@ select.bm-select option { background: var(--elevated); color: #fff; }
                                                                                 <button id="bmWinPromptBtn" type="button" class="bm-ui-dropdown-item" title="Copy Windows EXE prompt for AI"><i class="fa-brands fa-windows" style="color:var(--teal);"></i>Windows EXE Prompt</button>
                                                                                 <button type="button" class="bm-ui-dropdown-item" data-wf="playwright" title="Load Playwright Visual Tests YAML"><i class="fa-solid fa-masks-theater" style="color:var(--green);"></i>Playwright Visual Tests</button>
                                                                                 <button type="button" class="bm-ui-dropdown-item" data-wf="lighthouse" title="Load Lighthouse CI Audit YAML"><i class="fa-solid fa-gauge-high" style="color:var(--amber);"></i>Lighthouse CI Audit</button>
-                                                                                <button type="button" class="bm-ui-dropdown-item" data-wf="clouddesktop" title="Load Cloud Desktop YAML"><i class="fa-solid fa-desktop" style="color:var(--blue);"></i>Cloud Desktop (noVNC)</button>
-                                                                              </div>
+                                                                                                                              </div>
                                                                             </div>
                                                             </div>
                     </div>
@@ -1431,9 +1430,8 @@ select.bm-select option { background: var(--elevated); color: #fff; }
                 <button class="btn" id="bpCopyLogBtnIcon" style="display:none; position:absolute; top:8px; right:12px; width:24px; height:24px; background:rgba(248,81,73,0.15); border:1px solid rgba(248,81,73,0.3); border-radius:6px; color:var(--red); font-size:10px; z-index:10;" title="Copy Error Logs"><i class="fa-regular fa-copy"></i></button>
               </div>
                 <div id="bpLinks" style="display:none; gap:8px; margin-top:12px;">
-                                  <a id="bpGhLink" href="#" target="_blank" rel="noopener" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:7px 12px; background:rgba(92,157,255,0.15); border:1px solid rgba(92,157,255,0.3); border-radius:8px; color:var(--blue); font-weight:600; font-size:11px; text-decoration:none;"><i class="fa-brands fa-github"></i> GitHub Action</a>
-                                  <a id="bpDesktopLink" href="#" target="_blank" rel="noopener" style="display:none; flex:1; align-items:center; justify-content:center; gap:6px; padding:7px 12px; background:rgba(57,211,83,0.15); border:1px solid rgba(57,211,83,0.3); border-radius:8px; color:var(--green); font-weight:600; font-size:11px; text-decoration:none;"><i class="fa-solid fa-desktop"></i> <span id="bpDesktopLinkLbl">Desktop link pending...</span></a>
-                                </div>
+                                                  <a id="bpGhLink" href="#" target="_blank" rel="noopener" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:7px 12px; background:rgba(92,157,255,0.15); border:1px solid rgba(92,157,255,0.3); border-radius:8px; color:var(--blue); font-weight:600; font-size:11px; text-decoration:none;"><i class="fa-brands fa-github"></i> GitHub Action</a>
+                                                </div>
                                 <div style="display:flex; gap:8px; margin-top:12px;">
               <button id="bpCancelBtn" style="flex:1; padding:7px 12px; background:rgba(248,81,73,0.15); border:1px solid rgba(248,81,73,0.3); border-radius:8px; color:var(--red); cursor:pointer; font-weight:600; font-size:11px; transition:all 0.2s;">Cancel Build</button>
                       <button id="bpCloseBtn" style="display:none; flex:1; padding:7px 12px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; cursor:pointer; font-weight:600; font-size:11px; transition:all 0.2s;">Close</button>
@@ -5380,79 +5378,7 @@ $backdrop.addEventListener('click', function(e) {
           toast('✅ Lighthouse CI Web Audit YAML loaded into GitHub Action!');
         };
 
-    window.loadCloudDesktopWorkflow = function() {
-          const yaml = [
-            "name: On-Demand Cloud Desktop",
-            "on:",
-            "  workflow_dispatch:",
-            "    inputs:",
-            "      resolution:",
-            "        description: 'Screen Resolution (WxHxDepth)'",
-            "        required: false",
-            "        default: '1280x720x24'",
-            "      session_hours:",
-            "        description: 'Session Duration (Hours, max 6)'",
-            "        required: false",
-            "        default: '2'",
-            "jobs:",
-            "  desktop:",
-            "    runs-on: ubuntu-latest",
-            "    steps:",
-            "      - name: Checkout Source",
-            "        uses: actions/checkout@v4",
-            "      - name: Install Desktop Stack & Cloudflared",
-            "        run: |",
-            "          export DEBIAN_FRONTEND=noninteractive",
-            "          sudo apt-get update -qq",
-            "          sudo apt-get install -y -qq --no-install-recommends xvfb x11vnc openbox novnc websockify xterm chromium-browser curl jq",
-            "          curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared",
-            "          sudo chmod +x /usr/local/bin/cloudflared",
-            "      - name: Start Virtual Framebuffer & Window Manager",
-            "        run: |",
-            "          Xvfb :99 -screen 0 ${{ github.event.inputs.resolution }} &",
-            "          sleep 2",
-            "          export DISPLAY=:99",
-            "          openbox-session &",
-            "          xterm -geometry 90x28+20+20 &",
-            "      - name: Launch VNC Server & WebSocket Bridge",
-            "        run: |",
-            "          export DISPLAY=:99",
-            "          mkdir -p ~/.vnc",
-            "          x11vnc -storepasswd \"aicompiler\" ~/.vnc/passwd",
-            "          x11vnc -display :99 -forever -shared -rfbauth ~/.vnc/passwd -rfbport 5900 &",
-            "          sleep 2",
-            "          websockify --web /usr/share/novnc 6080 localhost:5900 &",
-            "          sleep 2",
-            "      - name: Establish HTTPS Tunnel",
-            "        run: |",
-            "          cloudflared tunnel --url http://127.0.0.1:6080 --logfile /tmp/tunnel.log &",
-            "          TUNNEL_URL=\"\"",
-            "          for i in {1..30}; do",
-            "            TUNNEL_URL=$(grep -oE 'https://[a-zA-Z0-9-]+\\.trycloudflare\\.com' /tmp/tunnel.log | head -n 1 || true)",
-            "            if [ -n \"$TUNNEL_URL\" ]; then break; fi",
-            "            sleep 2",
-            "          done",
-            "          if [ -z \"$TUNNEL_URL\" ]; then echo '::error::Tunnel failed'; exit 1; fi",
-            "          FULL_URL=\"${TUNNEL_URL}/vnc.html?autoconnect=true&resize=scale&password=aicompiler\"",
-            "          echo \"STREAM_URL=${FULL_URL}\" >> $GITHUB_ENV",
-            "          echo \"================================================================\"",
-            "          echo \"CLOUD_DESKTOP_READY: ${FULL_URL}\"",
-            "          echo \"================================================================\"",
-            "          echo \"::notice title=Cloud Desktop Ready::${FULL_URL}\"",
-            "      - name: Keep Runner Alive",
-            "        run: |",
-            "          echo \"Desktop running at ${{ env.STREAM_URL }}\"",
-            "          SECONDS=$(( ${{ github.event.inputs.session_hours }} * 3600 ))",
-            "          sleep $SECONDS"
-          ].join('\n');
-
-          document.getElementById('bmWorkflowYaml').value = yaml;
-          document.getElementById('bmWorkflowFilename').value = 'cloud-desktop.yml';
-          saveBuildConfig();
-          document.getElementById('moreCloseBtn').click();
-          document.getElementById('masterBuildBtn').click();
-          toast('✅ Cloud Desktop YAML loaded into GitHub Action!');
-        };
+    
 
         
 
@@ -10138,9 +10064,8 @@ window.oneClickPush = async function(customMsg) {
                                                                                                   item.addEventListener('click', function() {
                                                                                                     var wf = this.getAttribute('data-wf');
                                                                                                     if (wf === 'playwright' && window.loadPlaywrightWorkflow) window.loadPlaywrightWorkflow();
-                                                                                                    else if (wf === 'lighthouse' && window.loadLighthouseWorkflow) window.loadLighthouseWorkflow();
-                                                                                                    else if (wf === 'clouddesktop' && window.loadCloudDesktopWorkflow) window.loadCloudDesktopWorkflow();
-                                                                                                    bmYamlDropdownMenuEl.classList.remove('open');
+                                                                                                                                                                                      else if (wf === 'lighthouse' && window.loadLighthouseWorkflow) window.loadLighthouseWorkflow();
+                                                                                                                                                                                      bmYamlDropdownMenuEl.classList.remove('open');
                                                                                                   });
                                                                                                 });
                                                                                                 document.addEventListener('click', function(e) {
@@ -10474,11 +10399,10 @@ window.oneClickPush = async function(customMsg) {
                                   }
 
               const title = 'Building: ' + filename;
-                            const _isDesktop = /CLOUD_DESKTOP_READY|novnc/i.test(yamlContent) || /cloud-desktop/i.test(filename);
-                            clearTimeout(currentOverlayPollTimer);
-                            window._activeBuildRepo = ghRepo;
-                            try { localStorage.setItem('active_build_v1', JSON.stringify({ title: title, workflowFile: filename, artifactName: artifactName, startTime: Date.now(), repo: ghRepo, branch: ghBranch, phase: 'starting', isDesktop: _isDesktop })); } catch (e) {}
-              showBuildOverlay(title);
+                                          clearTimeout(currentOverlayPollTimer);
+                                          window._activeBuildRepo = ghRepo;
+                                          try { localStorage.setItem('active_build_v1', JSON.stringify({ title: title, workflowFile: filename, artifactName: artifactName, startTime: Date.now(), repo: ghRepo, branch: ghBranch, phase: 'starting' })); } catch (e) {}
+                            showBuildOverlay(title);
 
               try {
                 if (iconFile) {
@@ -10564,8 +10488,8 @@ window.oneClickPush = async function(customMsg) {
                 updateBuildOverlay('Build running. Polling GitHub...', 35);
                 clearTimeout(currentOverlayPollTimer);
 
-                localStorage.setItem('active_build_v1', JSON.stringify({ title: title, workflowFile: filename, artifactName: artifactName, startTime: Date.now(), repo: ghRepo, branch: ghBranch, phase: 'running', isDesktop: _isDesktop, minimized: document.getElementById('buildProgressOverlay').classList.contains('minimized'), log: document.getElementById('bpLogs').textContent.slice(-8000), status: 'Build running. Polling GitHub...', pct: 35, state: '' }));
-                                if (window.updateBuildLinks) window.updateBuildLinks();
+                localStorage.setItem('active_build_v1', JSON.stringify({ title: title, workflowFile: filename, artifactName: artifactName, startTime: Date.now(), repo: ghRepo, branch: ghBranch, phase: 'running', minimized: document.getElementById('buildProgressOverlay').classList.contains('minimized'), log: document.getElementById('bpLogs').textContent.slice(-8000), status: 'Build running. Polling GitHub...', pct: 35, state: '' }));
+                                                if (window.updateBuildLinks) window.updateBuildLinks();
                 localStorage.setItem('last_build_workflow_v1', filename);
                 pollOverlayStatus(filename, artifactName);
 
@@ -10585,77 +10509,18 @@ window.oneClickPush = async function(customMsg) {
             };
 
             window.updateBuildLinks = function() {
-              try {
-                var ab = JSON.parse(localStorage.getItem('active_build_v1'));
-                var row = document.getElementById('bpLinks');
-                var gh = document.getElementById('bpGhLink');
-                var dk = document.getElementById('bpDesktopLink');
-                var lbl = document.getElementById('bpDesktopLinkLbl');
-                if (!row || !gh || !dk) return;
-                if (!ab || !ab.repo) { row.style.display = 'none'; return; }
-                gh.href = ab.runUrl || ('https://github.com/' + ab.repo + '/actions' + (ab.workflowFile ? '/workflows/' + encodeURIComponent(ab.workflowFile) : ''));
-                row.style.display = 'flex';
-                if (ab.isDesktop && !ab.done) {
-                  dk.style.display = 'flex';
-                  if (ab.desktopUrl) {
-                    dk.href = ab.desktopUrl;
-                    dk.style.pointerEvents = 'auto';
-                    dk.style.opacity = '1';
-                    if (lbl) lbl.textContent = 'Open Cloud Desktop';
-                  } else {
-                    dk.href = '#';
-                    dk.style.pointerEvents = 'none';
-                    dk.style.opacity = '0.5';
-                    if (lbl) lbl.textContent = 'Desktop link pending...';
-                  }
-                } else {
-                  dk.style.display = 'none';
-                }
-              } catch (e) {}
-            };
+                          try {
+                            var ab = JSON.parse(localStorage.getItem('active_build_v1'));
+                            var row = document.getElementById('bpLinks');
+                            var gh = document.getElementById('bpGhLink');
+                            if (!row || !gh) return;
+                            if (!ab || !ab.repo) { row.style.display = 'none'; return; }
+                            gh.href = ab.runUrl || ('https://github.com/' + ab.repo + '/actions' + (ab.workflowFile ? '/workflows/' + encodeURIComponent(ab.workflowFile) : ''));
+                            row.style.display = 'flex';
+                          } catch (e) {}
+                        };
 
-            window.detectDesktopUrl = async function(run) {
-              if (window._dkBusy) return;
-              var ab = null;
-              try { ab = JSON.parse(localStorage.getItem('active_build_v1')); } catch (e) {}
-              if (!ab || !ab.isDesktop || ab.desktopUrl || !run || !run.jobs_url) return;
-              window._dkBusy = true;
-              try {
-                var hdr = { Authorization: 'token ' + ghToken, Accept: 'application/vnd.github.v3+json' };
-                var jr = await fetch(run.jobs_url, { headers: hdr, cache: 'no-store' });
-                if (!jr.ok) return;
-                var jd = await jr.json();
-                var job = jd && jd.jobs && jd.jobs[0];
-                if (!job) return;
-                var re = /https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com\/vnc\.html\?[^\s"'<>]+/;
-                var found = '';
-                try {
-                  var ar = await fetch('https://api.github.com/repos/' + (ab.repo || ghRepo) + '/check-runs/' + job.id + '/annotations', { headers: hdr, cache: 'no-store' });
-                  if (ar.ok) {
-                    var anns = await ar.json();
-                    (Array.isArray(anns) ? anns : []).forEach(function(a) {
-                      var m = re.exec(String(a.message || '') + ' ' + String(a.title || ''));
-                      if (m && !found) found = m[0];
-                    });
-                  }
-                } catch (e) {}
-                if (!found) {
-                  try {
-                    var lr = await fetch(job.url + '/logs', { headers: { Authorization: 'token ' + ghToken }, cache: 'no-store' });
-                    if (lr.ok) { var m2 = re.exec(await lr.text()); if (m2) found = m2[0]; }
-                  } catch (e) {}
-                }
-                if (found) {
-                  found = found.replace(/&amp;/g, '&');
-                  window.persistActiveBuild({ desktopUrl: found });
-                  window.updateBuildLinks();
-                  appendBuildLog('🖥 Cloud desktop link is ready.');
-                }
-              } catch (e) {
-              } finally {
-                window._dkBusy = false;
-              }
-            };
+            
 
             window.restoreActiveBuild = function() {
               var ab = null;
@@ -10730,22 +10595,16 @@ window.oneClickPush = async function(customMsg) {
               } catch(e) {}
     
               if (run.status !== 'completed') {
-                updateBuildOverlay(`Building: ${run.status}...`, 60);
-                                if (window.persistActiveBuild) window.persistActiveBuild({ runId: run.id, runUrl: run.html_url, phase: 'running' });
-                                if (window.updateBuildLinks) window.updateBuildLinks();
-                                if (window.detectDesktopUrl) window.detectDesktopUrl(run);
-                appendBuildLog(`[${new Date().toLocaleTimeString()}] Status: ${run.status}`);
-                currentOverlayPollTimer = setTimeout(() => pollOverlayStatus(workflowFile, artifactName), 10000);
-              } else {
-                if (window.persistActiveBuild) window.persistActiveBuild({ done: true, conclusion: run.conclusion, runId: run.id, runUrl: run.html_url });
-                                if (window.updateBuildLinks) window.updateBuildLinks();
-                                if (run.conclusion === 'success') {
-              if (_abSaved && _abSaved.isDesktop) {
-                              updateBuildOverlay('Cloud desktop session ended.', 100, 'ok');
-                              appendBuildLog('[' + new Date().toLocaleTimeString() + '] Cloud desktop session finished.');
-                              return;
-                            }
-                            updateBuildOverlay(`Build Success! Fetching Artifact...`, 90);
+                              updateBuildOverlay(`Building: ${run.status}...`, 60);
+                                              if (window.persistActiveBuild) window.persistActiveBuild({ runId: run.id, runUrl: run.html_url, phase: 'running' });
+                                              if (window.updateBuildLinks) window.updateBuildLinks();
+                              appendBuildLog(`[${new Date().toLocaleTimeString()}] Status: ${run.status}`);
+                              currentOverlayPollTimer = setTimeout(() => pollOverlayStatus(workflowFile, artifactName), 10000);
+                            } else {
+                              if (window.persistActiveBuild) window.persistActiveBuild({ done: true, conclusion: run.conclusion, runId: run.id, runUrl: run.html_url });
+                                              if (window.updateBuildLinks) window.updateBuildLinks();
+                                              if (run.conclusion === 'success') {
+                                          updateBuildOverlay(`Build Success! Fetching Artifact...`, 90);
               appendBuildLog(`[${new Date().toLocaleTimeString()}] Conclusion: SUCCESS`);
         
               let artRes = await fetch(run.artifacts_url, { headers: { Authorization: `token ${ghToken}` }});
