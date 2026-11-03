@@ -4796,6 +4796,7 @@ function updateMenuPosition() {
 var dragTarget = $fabContainer || $toggleBtn;
 dragTarget.addEventListener('pointerdown', function(e) {
   if (e.target.closest('#quickPushBtn')) return;
+    if (e.target.closest('#quickPasteBtn')) return;
   isDragging  = false;
   dragStartX  = e.clientX; dragStartY  = e.clientY;
   var rect    = dragTarget.getBoundingClientRect();
