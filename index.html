@@ -588,12 +588,12 @@ button.btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; c
   display: flex; align-items: center; justify-content: space-between; padding: 0 6px env(safe-area-inset-bottom, 0px) 6px; gap: 3px; font-size: 9px; font-weight: 500; color: #ffffff; z-index: 9990;
   overflow: hidden; white-space: nowrap;
 }
-#statusBar .sb-item { white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; padding: 1px 4px; border-radius: 4px; background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.85); min-width: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+#statusBar .sb-item { white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; padding: 0; background: transparent; color: rgba(255,255,255,0.75); min-width: 0; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
 #statusBar .sb-ok { color: var(--green); } #statusBar .sb-warn { color: var(--amber); }
-#statusBar .sb-err { color: var(--red); } #statusBar .sb-sep { display: none; }
-#statusBar #sb-branch { background: rgba(45,212,191,0.14); max-width: 28vw; }
+#statusBar .sb-err { color: var(--red); } #statusBar .sb-sep { display: inline; color: rgba(255,255,255,0.25); margin: 0 4px; }
+#statusBar #sb-branch { background: transparent; max-width: 28vw; }
 #statusBar #sb-branch-val { overflow: hidden; text-overflow: ellipsis; }
-#statusBar #sb-status { background: rgba(57,211,83,0.14); color: var(--green); flex-shrink: 0; }
+#statusBar #sb-status { background: transparent; color: var(--green); flex-shrink: 0; }
 #statusBar .sb-ico { font-size: 8px; color: rgba(255,255,255,0.45); margin-right: -1px; flex-shrink: 0; }
 
 #progressBar {
@@ -1670,10 +1670,14 @@ select.bm-select option { background: var(--elevated); color: #fff; }
         </div>
 
     <div id="statusBar">
-      <span class="sb-item" id="sb-branch" style="cursor:pointer; color:var(--teal); font-weight:600;" onclick="window.openBranchModal()"><i class="fa-solid fa-code-branch" style="font-size:8px;"></i><span id="sb-branch-val">main</span></span>
+      <span class="sb-item" id="sb-branch" style="cursor:pointer; color:var(--teal);" onclick="window.openBranchModal()"><i class="fa-solid fa-code-branch" style="font-size:8px;"></i><span id="sb-branch-val">main</span></span>
+      <span class="sb-sep">·</span>
       <span class="sb-item" id="sb-lines">–L</span>
+      <span class="sb-sep">·</span>
       <span class="sb-item" id="sb-size">–K</span>
+      <span class="sb-sep">·</span>
       <span class="sb-item" id="sb-undo">0/0</span>
+      <span class="sb-sep">·</span>
       <span class="sb-item" id="sb-status">ready</span>
             </div>
 
