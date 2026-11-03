@@ -12485,8 +12485,7 @@ window.oneClickPush = async function(customMsg) {
         });
         actions.insertBefore(sb, actions.firstChild);
       }
-      actions.appendChild(mkBtn('fa-regular fa-clone', 'Duplicate', 'var(--teal)', function() { window.duplicatePaths([info.path]); }));
-      actions.appendChild(mkBtn('fa-solid fa-link', 'Copy path', 'rgba(255,255,255,0.7)', function() { window.copyPath(info.path); }));
+      
     });
   }
   function selBar(ftc) {
