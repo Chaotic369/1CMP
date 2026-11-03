@@ -581,13 +581,17 @@ button.btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; c
 }
 
 #statusBar {
-  position: fixed; bottom: 0; left: 0; right: 0; height: calc(26px + env(safe-area-inset-bottom, 0px)); background: #08080a; border: none !important;
+  position: fixed; bottom: 0; left: 0; right: 0; height: calc(26px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(180deg, #0d0e12, #07070a); border: none !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 -4px 14px rgba(0,0,0,0.35);
   display: flex; align-items: center; padding: 0 10px env(safe-area-inset-bottom, 0px) 10px; gap: 8px; font-size: 10px; font-weight: 500; color: #ffffff; z-index: 9990;
   overflow-x: auto; overflow-y: hidden; white-space: nowrap;
 }
 #statusBar .sb-item { white-space: nowrap; }
 #statusBar .sb-ok { color: var(--green); } #statusBar .sb-warn { color: var(--amber); }
-#statusBar .sb-err { color: var(--red); } #statusBar .sb-sep { color: #ffffff; }
+#statusBar .sb-err { color: var(--red); } #statusBar .sb-sep { color: rgba(255,255,255,0.14); }
+#statusBar .sb-item { padding: 2px 7px; border-radius: 6px; background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85); }
+#statusBar #sb-branch { background: rgba(45,212,191,0.14); }
+#statusBar #sb-status { background: rgba(57,211,83,0.14); color: var(--green); }
+#statusBar .sb-ico { font-size: 9px; color: rgba(255,255,255,0.45); margin-right: -4px; }
 
 #progressBar {
   position: fixed; top: 0; left: 0; height: 3px; background: var(--blue); z-index: 30000;
@@ -1662,15 +1666,13 @@ select.bm-select option { background: var(--elevated); color: #fff; }
     <div id="statusBar">
   <span class="sb-item" id="sb-branch" style="cursor:pointer; color:var(--teal); font-weight:600;" onclick="window.openBranchModal()"><i class="fa-solid fa-code-branch"></i> <span id="sb-branch-val">main</span></span>
   <span class="sb-sep">|</span>
-  <span class="sb-item" id="sb-lines">– lines</span>
-  <span class="sb-sep">|</span>
-  <span class="sb-item" id="sb-size">– KB</span>
-  <span class="sb-sep">|</span>
-  <span class="sb-item" id="sb-undo">undo:0</span>
-  <span class="sb-sep">|</span>
-  <span class="sb-item" id="sb-ast">AST: –</span>
-  <span class="sb-sep">|</span>
-  <span class="sb-item" id="sb-status">ready</span>
+  <i class="fa-solid fa-align-left sb-ico"></i><span class="sb-item" id="sb-lines">– lines</span>
+    <span class="sb-sep">•</span>
+    <i class="fa-solid fa-weight-hanging sb-ico"></i><span class="sb-item" id="sb-size">– KB</span>
+    <span class="sb-sep">•</span>
+    <i class="fa-solid fa-clock-rotate-left sb-ico"></i><span class="sb-item" id="sb-undo">undo:0</span>
+    <span class="sb-sep">•</span>
+    <span class="sb-item" id="sb-status">ready</span>
         </div>
 
 <script>
@@ -4677,12 +4679,7 @@ function updateStatusBar() {
   let wsText = wsKeys.length > 0 ? ` | WS: ${wsKeys.length} files (${wsMod} mod)` : '';
   
   document.getElementById('sb-undo').textContent  = 'undo:' + undoStack.length + ' redo:' + redoStack.length + wsText;
-  if (sourceContent) {
-        var broken = Object.entries(tokenBalance(sourceContent)).filter(function(e) { return e[1] !== 0; });
-        var sb = document.getElementById('sb-ast');
-        if (broken.length === 0) { sb.textContent = 'AST: ✓'; sb.className = 'sb-item sb-ok'; sb.style.color = ''; }
-        else { sb.textContent = 'AST: ⚠'; sb.className = 'sb-item sb-warn'; sb.style.color = ''; }
-      }
+  
 
   var hasChanges = (wsMod > 0) || (!!sourceContent && sourceContent !== lastSavedContent) || (viewMode === 'code' && !!$codeView.value && $codeView.value !== lastSavedContent);
     var canPush = !!(ghRepo && ghToken && hasChanges);
