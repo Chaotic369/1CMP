@@ -382,6 +382,9 @@ body:has(#menu-backdrop.dimmed) #fabContainer { z-index: 29980 !important; }
 #quickPushBtn {
   color: var(--blue);
 }
+#quickPasteBtn {
+  color: var(--green);
+}
 #toggleUiBtn.active {
   background: rgba(22, 22, 22, 0.85);
   color: var(--green);
@@ -1014,7 +1017,10 @@ select.bm-select option { background: var(--elevated); color: #fff; }
 <div id="menu-backdrop"></div>
 
 <div id="fabContainer">
-  <button id="quickPushBtn" class="fab-btn" title="Push to GitHub">
+  <button id="quickPasteBtn" class="fab-btn" title="Paste &amp; Apply">
+      <i class="fa-solid fa-bolt"></i>
+    </button>
+    <button id="quickPushBtn" class="fab-btn" title="Push to GitHub">
     <i class="fa-solid fa-arrow-up-from-bracket"></i>
   </button>
   <button id="toggleUiBtn" class="fab-btn" title="Toggle Menu">
@@ -4853,6 +4859,15 @@ if ($mainPushBtn) {
   $mainPushBtn.addEventListener('click', function(e) {
     e.stopPropagation();
     openPushCommitModal();
+  });
+}
+var $quickPasteBtn = document.getElementById('quickPasteBtn');
+if ($quickPasteBtn) {
+  $quickPasteBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (isDragging) return;
+    var pb = document.getElementById('pasteBtn');
+    if (pb) pb.click();
   });
 }
 if ($quickPushBtn) {
