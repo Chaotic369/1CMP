@@ -8634,6 +8634,13 @@ function render(src, skipEditorUpdate) {
             var emptyEl = document.getElementById('emptyState');
             if (emptyEl) {
               emptyEl.style.display = 'flex';
+              emptyEl.style.background = 'transparent';
+              try {
+                var wpUrl = localStorage.getItem('wallpaper_url');
+                if (wpUrl && typeof applyWallpaper === 'function') {
+                  applyWallpaper(wpUrl);
+                }
+              } catch(e) {}
               emptyEl.style.flexDirection = 'column';
               emptyEl.style.alignItems = 'center';
               emptyEl.style.justifyContent = 'center';
@@ -8641,8 +8648,8 @@ function render(src, skipEditorUpdate) {
               if (!warnEl) {
                 warnEl = document.createElement('div');
                 warnEl.id = 'nestedWarnText';
-                warnEl.style.cssText = 'position:absolute;bottom:24px;font-size:10px;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.6);padding:4px 8px;border-radius:6px;pointer-events:none;z-index:10;';
-                emptyEl.appendChild(warnEl);
+                warnEl.style.cssText = 'position:fixed;bottom:26px;left:50%;transform:translateX(-50%);font-size:10px;font-family:"JetBrains Mono",monospace;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);padding:4px 10px;border-radius:6px;pointer-events:none;z-index:1000;letter-spacing:0.5px;';
+                document.body.appendChild(warnEl);
               }
               warnEl.textContent = 'Nested preview limited to 3 levels';
               warnEl.style.display = 'block';
