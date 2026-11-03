@@ -1057,8 +1057,12 @@ select.bm-select option { background: var(--elevated); color: #fff; }
                     <div style="position: absolute; bottom: 6px; left: 6px; width: 18px; height: 18px; border-bottom: 2.5px solid rgba(255, 255, 255, 0.55) !important; border-left: 2.5px solid rgba(255, 255, 255, 0.55) !important; border-bottom-left-radius: 10px; box-shadow: none;"></div>
                   </div>
             <div id="app-menu-loader" style="display: none; position: absolute; inset: 0; z-index: 10000; background: #000000; border-radius: 12px; align-items: center; justify-content: center; flex-direction: column; gap: 10px;">
-                                  <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 14px; color: var(--blue);"></i>
-                                <span id="app-menu-loader-text" style="font-size: 10px; font-weight: 600; color: #ffffff; letter-spacing: 0.5px;">Connecting...</span>
+                                  <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 16px; color: var(--blue);"></i>
+                                                                  <span id="app-menu-loader-text" style="font-size: 10px; font-weight: 600; color: #ffffff; letter-spacing: 0.5px; text-align: center; padding: 0 12px;">Connecting...</span>
+                                                                  <div style="width: 62%; max-width: 220px; height: 5px; border-radius: 5px; background: rgba(255,255,255,0.1); overflow: hidden;">
+                                                                    <div id="app-menu-loader-fill" style="width: 0%; height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--blue), var(--teal));"></div>
+                                                                  </div>
+                                                                  <span id="app-menu-loader-pct" style="font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.65);">0%</span>
                           </div>
               <div id="repoSidebar">
           <div style="display:flex; flex-direction:column; gap:0px; padding-bottom:20px; position:relative; z-index:10002;">
@@ -4525,17 +4529,41 @@ function hideProgress() {
   setTimeout(function() { $progress.classList.remove('active'); $progress.style.width = '0%'; }, 150);
 }
 
+var _mlTimer = null, _mlHideT = null, _mlCur = 0;
+function _mlPaint() {
+  var f = document.getElementById('app-menu-loader-fill');
+  var p = document.getElementById('app-menu-loader-pct');
+  if (f) f.style.width = _mlCur + '%';
+  if (p) p.textContent = Math.round(_mlCur) + '%';
+}
+
 function showMenuLoader(msg) {
   var loader = document.getElementById('app-menu-loader');
   if (loader) {
+    clearTimeout(_mlHideT);
+    clearInterval(_mlTimer);
     document.getElementById('app-menu-loader-text').textContent = msg || 'Connecting...';
+    _mlCur = 0;
+    _mlPaint();
     loader.style.display = 'flex';
+    _mlTimer = setInterval(function() {
+      if (_mlCur < 90) { _mlCur += Math.max((90 - _mlCur) * 0.08, 0.4); _mlPaint(); }
+    }, 120);
   }
 }
 
 function hideMenuLoader() {
   var loader = document.getElementById('app-menu-loader');
-  if (loader) loader.style.display = 'none';
+  if (!loader) return;
+  clearInterval(_mlTimer);
+  _mlCur = 100;
+  _mlPaint();
+  clearTimeout(_mlHideT);
+  _mlHideT = setTimeout(function() {
+    loader.style.display = 'none';
+    _mlCur = 0;
+    _mlPaint();
+  }, 200);
 }
 
 function addLog(type, msg) {
